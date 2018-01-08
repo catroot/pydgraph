@@ -22,26 +22,24 @@ if sys.version_info >= (2, 7, 9):
     import ssl
     ssl._create_default_https_context = ssl._create_unverified_context
 
-from pydgraph.utils.meta import VERSION
-
 setup(name="pydgraph",
-      version=VERSION,
+      version='1.0.1',
       description="Dgraph driver for Python",
       license="Apache License, Version 2.0",
-      author="Mohit Ranka",
-      author_email="mohitranka@gmail.com",
-      url="https://github.com/dgraph-io/pydgraph",
+      author="Vlad Jiman",
+      author_email="vlad.jiman@thehutgroup.com",
+      url="https://github.com/jimanvlad/pydgraph",
       classifiers=[
           "Intended Audience :: Developers",
           "License :: OSI Approved :: Apache Software License",
           "Operating System :: OS Independent",
           "Topic :: Database",
           "Topic :: Software Development",
-          "Programming Language :: Python :: 2.7",
           "Programming Language :: Python :: 3.3",
           "Programming Language :: Python :: 3.4",
+          "Programming Language :: Python :: 3.5",
+          "Programming Language :: Python :: 3.6",
       ],
       packages=["pydgraph", "pydgraph.utils", "pydgraph.utils.proto"],
       install_requires=open('requirements.txt').readlines(),
-      test_suite='tests',
       )

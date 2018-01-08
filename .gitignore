@@ -4,3 +4,4 @@ build/*
 dist/*
 pydgraph.egg-info/*
 .eggs
+*.iml

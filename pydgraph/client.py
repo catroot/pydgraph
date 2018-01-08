@@ -17,27 +17,64 @@
 This module contains the main user-facing methods for interacting with the
 Dgraph server over gRPC.
 """
-import grpc
-from grpc.beta import implementations
-from pydgraph.utils import loader
-from pydgraph.utils.meta import VERSION
+from pydgraph.utils.proto import api_pb2 as api
+from pydgraph.utils.proto.api_pb2_grpc import DgraphStub
 
-__author__ = 'Mohit Ranka <mohitranka@gmail.com>'
-__maintainer__ = 'Mohit Ranka <mohitranka@gmail.com>'
-__version__ = VERSION
-__status__ = 'development'
+from typing import Union
+
+import grpc
+import json
 
 
 class DgraphClient(object):
     def __init__(self, host, port):
         self.channel = grpc.insecure_channel("{host}:{port}".format(host=host, port=port))
-        self.stub = loader.BetaDgraphStub(self.channel)
+        self.stub = DgraphStub(self.channel)
 
-    def query(self, q, timeout=None):
-        request = loader.Request(query=q)
-        response = self.stub.Query(request, timeout)
+    def query(self, query: str) -> api.Response:
+        request = api.Request(query=query)
+        response = self.stub.Query(request)
         return response
 
-    async def aQuery(self, q, timeout=None):
-        request = loader.Request(query=q)
-        return await self.stub.aQuery(request, timeout)
+    def mutate(self, type: str, payload: Union[str, dict], delete: bool = False, commit: bool = True) -> Union[
+        api.Assigned, api.TxnContext]:
+        assert type in ['json', 'nquads']
+        assert delete in [False, True]
+
+        mutation = api.Mutation()
+
+        if isinstance(payload, dict):
+            payload = json.dumps(payload).encode()
+        elif isinstance(payload, str):
+            payload = payload.encode()
+
+        if type == 'json':
+            if delete:
+                mutation.delete_json = payload
+            else:
+                mutation.set_json = payload
+        elif type == 'nquads':
+            if delete:
+                mutation.delete_nquads = payload
+            else:
+                mutation.set_nquads = payload
+
+        assert mutation.IsInitialized()
+
+        transaction = self.stub.Mutate(mutation)
+
+        if commit:
+            result = self.stub.CommitOrAbort(transaction.context)
+        else:
+            result = transaction
+
+        return result
+
+    def schema(self, schema: str) -> api.Payload:
+        schema = schema.encode()
+        operation = api.Operation(schema=schema)
+        return self.stub.Alter(operation)
+
+    def drop_all(self) -> api.Payload:
+        operation = api.Operation(drop_all=True)
+        return self.stub.Alter(operation)
